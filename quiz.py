@@ -3,7 +3,7 @@ import random
 import requests
 
 # 📌 GitHub RAW URL 설정
-GITHUB_RAW_URL = "https://raw.githubusercontent.com/pododoro/first/main/📖 2025년 2청년부 동계수련회 성경퀴즈대회 예상문제 106.txt"
+GITHUB_RAW_URL = https://raw.githubusercontent.com/pododoro/first/main/%F0%9F%93%96%202025%EB%85%84%202%EC%B2%AD%EB%85%84%EB%B6%80%20%EB%8F%99%EA%B3%84%EC%88%98%EB%A0%A8%ED%9A%8C%20%EC%84%B1%EA%B2%BD%ED%80%B4%EC%A6%88%EB%8C%80%ED%9A%8C%20%EC%98%88%EC%83%81%EB%AC%B8%EC%A0%9C%20106.txt
 
 # 📌 GitHub에서 데이터 불러오기
 def load_questions(url):
