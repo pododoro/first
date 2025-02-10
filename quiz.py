@@ -2,42 +2,50 @@ import streamlit as st
 import random
 import requests
 
-# 📌 GitHub RAW URL 설정
-GITHUB_RAW_URL = "https://raw.githubusercontent.com/pododoro/first/main/2025%EB%85%84%202%EC%B2%AD%EB%85%84%EB%B6%80%20%EB%8F%99%EA%B3%84%EC%88%98%EB%A0%A8%ED%9A%8C%20%EC%84%B1%EA%B2%BD%ED%80%B4%EC%A6%88%EB%8C%80%ED%9A%8C%20%EC%98%88%EC%83%81%EB%AC%B8%EC%A0%9C%20106.txt"
+# 📌 올바른 GitHub RAW URL 입력
+GITHUB_RAW_URL = "https://raw.githubusercontent.com/pododoro/first/main/2025년%202청년부%20동계수련회%20성경퀴즈대회%20예상문제%20106.txt"
 
 # 📌 GitHub에서 데이터 불러오기
 def load_questions(url):
-    response = requests.get(url)
-    if response.status_code != 200:
-        return []  # 파일을 불러오지 못하면 빈 리스트 반환
-    lines = response.text.split("\n")
+    try:
+        response = requests.get(url, timeout=10)  # 10초 타임아웃 설정
 
-    questions = []
-    question = None
-    answer = None
-    explanation = None
-    reference = None
+        if response.status_code != 200:
+            st.error(f"❌ 파일을 불러오지 못했습니다. HTTP 상태 코드: {response.status_code}")
+            return []  # 빈 리스트 반환
 
-    for line in lines:
-        line = line.strip()
-        if line.startswith("📖") or not line:  # 제목 또는 빈 줄 무시
-            continue
-        if line[0].isdigit():  # 문제 번호로 시작하는 줄
-            if question:  # 이전 문제 저장
-                questions.append({"문제": question, "정답": answer, "해설": explanation, "성경구절": reference})
-            question = line.split(")")[1].strip()  # 번호 제거 후 문제 저장
-        elif line.startswith("정답:"):
-            answer = line.replace("정답:", "").strip()
-        elif line.startswith("해설:"):
-            explanation = line.replace("해설:", "").strip()
-        elif "(" in line and ")" in line:  # 성경구절 정보
-            reference = line.strip()
-    
-    # 마지막 문제 추가
-    if question and answer and explanation:
-        questions.append({"문제": question, "정답": answer, "해설": explanation, "성경구절": reference})
+        lines = response.text.split("\n")
 
-    return questions
+        questions = []
+        question = None
+        answer = None
+        explanation = None
+        reference = None
+
+        for line in lines:
+            line = line.strip()
+            if line.startswith("📖") or not line:  # 제목 또는 빈 줄 무시
+                continue
+            if line[0].isdigit():  # 문제 번호로 시작하는 줄
+                if question:  # 이전 문제 저장
+                    questions.append({"문제": question, "정답": answer, "해설": explanation, "성경구절": reference})
+                question = line.split(")")[1].strip()  # 번호 제거 후 문제 저장
+            elif line.startswith("정답:"):
+                answer = line.replace("정답:", "").strip()
+            elif line.startswith("해설:"):
+                explanation = line.replace("해설:", "").strip()
+            elif "(" in line and ")" in line:  # 성경구절 정보
+                reference = line.strip()
+
+        # 마지막 문제 추가
+        if question and answer and explanation:
+            questions.append({"문제": question, "정답": answer, "해설": explanation, "성경구절": reference})
+
+        return questions
+
+    except Exception as e:
+        st.error(f"❌ 오류 발생: {e}")
+        return []
 
 # 🚀 GitHub에서 퀴즈 데이터 불러오기
 questions_data = load_questions(GITHUB_RAW_URL)
