@@ -1,12 +1,17 @@
 import streamlit as st
 import random
+import requests
 
-# 파일에서 데이터 불러오기
-def load_questions(file_path):
+# 📌 GitHub RAW URL 설정 (파일의 Raw URL을 정확히 입력하세요)
+GITHUB_RAW_URL = "https://raw.githubusercontent.com/pododoro/first/main/%F0%9F%93%96%202025%EB%85%84%202%EC%B2%AD%EB%85%84%EB%B6%80%20%EB%8F%99%EA%B3%84%EC%88%98%EB%A0%A8%ED%9A%8C%20%EC%84%B1%EA%B2%BD%ED%80%B4%EC%A6%88%EB%8C%80%ED%9A%8C%20%EC%98%88%EC%83%81%EB%AC%B8%EC%A0%9C%20106.txt"
+
+# 📌 GitHub에서 데이터 불러오기
+def load_questions(url):
+    response = requests.get(url)
+    response.raise_for_status()  # HTTP 오류 발생 시 예외 처리
+    lines = response.text.split("\n")
+
     questions = []
-    with open(file_path, "r", encoding="utf-8") as f:
-        lines = f.readlines()
-
     question = None
     answer = None
     explanation = None
@@ -33,29 +38,28 @@ def load_questions(file_path):
 
     return questions
 
-# 📌 업로드한 파일 경로
-file_path = "/mnt/data/📖 2025년 2청년부 동계수련회 성경퀴즈대회 예상문제 106.txt"
-questions_data = load_questions(file_path)
+# 🚀 GitHub에서 퀴즈 데이터 불러오기
+questions_data = load_questions(GITHUB_RAW_URL)
 
-# Streamlit 페이지 설정
+# 🎯 Streamlit 웹 앱 설정
 st.title("📖 성경 퀴즈 마스터")
 st.write("랜덤 성경 퀴즈를 풀어보세요!")
 
-# 문제 랜덤 출제
+# 📝 문제 랜덤 출제
 if "current_question" not in st.session_state:
     st.session_state.current_question = random.choice(questions_data)
 
 question = st.session_state.current_question
 
-# 문제 표시
+# 📌 문제 표시
 st.subheader("문제")
 st.write(f"📖 {question['성경구절']}")
 st.write(question["문제"])
 
-# 정답 입력 받기
+# 📝 정답 입력 받기
 user_answer = st.text_input("정답을 입력하세요:")
 
-# 정답 확인
+# ✅ 정답 확인
 if st.button("제출"):
     if user_answer.strip() == question["정답"]:
         st.success("🎉 정답입니다!")
@@ -63,6 +67,6 @@ if st.button("제출"):
         st.error(f"❌ 오답입니다! 정답: {question['정답']}")
     st.write(f"📖 해설: {question['해설']}")
 
-    # 새로운 문제 랜덤 출제
+    # 🔄 새로운 문제 랜덤 출제
     st.session_state.current_question = random.choice(questions_data)
     st.button("다음 문제 풀기 🔄", on_click=lambda: st.rerun())
