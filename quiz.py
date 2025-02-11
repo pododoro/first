@@ -5,7 +5,7 @@ import requests
 import requests
 
 # GitHub RAW URL
-GITHUB_RAW_URL = "https://raw.githubusercontent.com/pododoro/first/main/quest.txt"
+GITHUB_RAW_URL = "https://raw.githubusercontent.com/pododoro/first/main/quest2.txt"
 
 # 파일 다운로드 및 내용 확인
 response = requests.get(GITHUB_RAW_URL)
