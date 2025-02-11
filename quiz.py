@@ -24,52 +24,80 @@ else:
     print(f"❌ 파일을 불러오지 못했습니다! HTTP 상태 코드: {response.status_code}")
 
 def load_questions(url):
-    response = requests.get(url)
-    
-    if response.status_code != 200:
-        print(f"❌ 파일을 불러오지 못했습니다. HTTP 상태 코드: {response.status_code}")
-        return []
-    
-    lines = response.text.split("\n")
+    try:
+        response = requests.get(url, timeout=10)
+        
+        # HTTP 상태 코드 확인
+        if response.status_code != 200:
+            st.error(f"❌ 파일을 불러오지 못했습니다. HTTP 상태 코드: {response.status_code}")
+            return []
 
-    # 🔹 파일 내용이 비어 있는 경우 처리
-    if not lines or len(lines) < 5:
-        print("❌ 파일 내용이 너무 짧거나 비어 있습니다. GitHub 파일을 확인하세요.")
-        return []
+        # 파일 내용 출력 (디버깅용)
+        st.write("파일 내용 (첫 100자):")
+        st.code(response.text[:100])  # 파일 내용의 첫 100자만 출력
 
-    questions = []
-    question = None
-    answer = None
-    explanation = None
-    reference = None
+        lines = response.text.split("\n")
+        questions = []
+        current_data = {
+            "문제": None,
+            "선택지": [],
+            "정답": None,
+            "해설": None,
+            "성경구절": None
+        }
 
-    for line in lines:
-        line = line.strip()
-        if line.startswith("📖") or not line:  # 제목 또는 빈 줄 무시
-            continue
-        if line[0].isdigit():  # 문제 번호로 시작하는 줄
-            if question:  # 이전 문제 저장
-                questions.append({"문제": question, "정답": answer, "해설": explanation, "성경구절": reference})
-            try:
-                question = line.split(")")[1].strip()  # 번호 제거 후 문제 저장
-            except IndexError:
-                print(f"❌ 잘못된 형식 발견: {line}")
+        for line in lines:
+            line = line.strip()
+            if not line or line.startswith("📖"):  # 제목 또는 빈 줄 무시
                 continue
-        elif line.startswith("정답:"):
-            answer = line.replace("정답:", "").strip()
-        elif line.startswith("해설:"):
-            explanation = line.replace("해설:", "").strip()
-        elif "(" in line and ")" in line:  # 성경구절 정보
-            reference = line.strip()
-    
-    # 마지막 문제 추가
-    if question and answer and explanation:
-        questions.append({"문제": question, "정답": answer, "해설": explanation, "성경구절": reference})
 
-    if not questions:
-        print("❌ 문제 데이터가 없습니다! 파일 형식을 확인하세요.")
+            # 문제 라인 처리
+            if line[0].isdigit() and ')' in line:
+                if current_data["문제"]:  # 이전 문제 저장
+                    questions.append(current_data)
+                    current_data = {
+                        "문제": None,
+                        "선택지": [],
+                        "정답": None,
+                        "해설": None,
+                        "성경구절": None
+                    }
+                current_data["문제"] = line.split(")")[1].strip()
 
-    return questions
+            # 선택지 라인 처리
+            elif line.startswith("①") or line.startswith("②") or line.startswith("③") or line.startswith("④"):
+                current_data["선택지"].append(line.strip())
+
+            # 정답 라인 처리
+            elif line.startswith("정답:"):
+                # 정답을 숫자로 변환 (예: "②" → 2)
+                answer_mapping = {"①": 1, "②": 2, "③": 3, "④": 4}
+                answer_symbol = line.replace("정답:", "").strip()
+                current_data["정답"] = answer_mapping.get(answer_symbol, None)
+
+            # 해설 라인 처리
+            elif line.startswith("해설:"):
+                current_data["해설"] = line.replace("해설:", "").strip()
+
+            # 성경구절 라인 처리
+            elif '(' in line and ')' in line:
+                current_data["성경구절"] = line.strip()
+
+        # 마지막 문제 추가
+        if current_data["문제"]:
+            questions.append(current_data)
+
+        # 로드된 문제 수 출력 (디버깅용)
+        st.write(f"로드된 문제 수: {len(questions)}")
+        if questions:
+            st.write("첫 번째 문제 샘플:")
+            st.json(questions[0])
+
+        return questions
+
+    except Exception as e:
+        st.error(f"❌ 오류 발생: {str(e)}")
+        return []
 
 
 # 📌 올바른 GitHub RAW URL 입력
