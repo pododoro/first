@@ -78,43 +78,47 @@ GITHUB_RAW_URL = "https://raw.githubusercontent.com/pododoro/first/main/quest.tx
 # 📌 GitHub에서 데이터 불러오기
 def load_questions(url):
     try:
-        response = requests.get(url, timeout=10)  # 10초 타임아웃 설정
-
+        response = requests.get(url, timeout=10)
         if response.status_code != 200:
-            st.error(f"❌ 파일을 불러오지 못했습니다. HTTP 상태 코드: {response.status_code}")
-            return []  # 빈 리스트 반환
+            st.error(f"❌ 파일 불러오기 실패. HTTP 상태 코드: {response.status_code}")
+            return []
 
         lines = response.text.split("\n")
-
         questions = []
-        question = None
-        answer = None
-        explanation = None
-        reference = None
+        current_data = {"문제": None, "정답": None, "해설": None, "성경구절": None}
 
         for line in lines:
             line = line.strip()
-            if line.startswith("📖") or not line:  # 제목 또는 빈 줄 무시
+            if not line or line.startswith("📖"):
                 continue
-            if line[0].isdigit():  # 문제 번호로 시작하는 줄
-                if question:  # 이전 문제 저장
-                    questions.append({"문제": question, "정답": answer, "해설": explanation, "성경구절": reference})
-                question = line.split(")")[1].strip()  # 번호 제거 후 문제 저장
+
+            # 문제 라인 처리 (강화된 검증 로직)
+            if line[0].isdigit() and ')' in line:
+                parts = line.split(')', 1)  # 최대 1번만 분할
+                if len(parts) >= 2:
+                    if current_data["문제"]:  # 이전 문제 저장
+                        questions.append(current_data)
+                        current_data = {"문제": None, "정답": None, "해설": None, "성경구절": None}
+                    current_data["문제"] = parts[1].strip()
+                else:
+                    st.warning(f"⚠️ 잘못된 문제 형식: {line}")
+            
+            # 나머지 필드 처리
             elif line.startswith("정답:"):
-                answer = line.replace("정답:", "").strip()
+                current_data["정답"] = line.replace("정답:", "").strip()
             elif line.startswith("해설:"):
-                explanation = line.replace("해설:", "").strip()
-            elif "(" in line and ")" in line:  # 성경구절 정보
-                reference = line.strip()
+                current_data["해설"] = line.replace("해설:", "").strip()
+            elif '(' in line and ')' in line:
+                current_data["성경구절"] = line.strip()
 
         # 마지막 문제 추가
-        if question and answer and explanation:
-            questions.append({"문제": question, "정답": answer, "해설": explanation, "성경구절": reference})
+        if current_data["문제"]:
+            questions.append(current_data)
 
         return questions
 
     except Exception as e:
-        st.error(f"❌ 오류 발생: {e}")
+        st.error(f"❌ 치명적 오류: {str(e)}")
         return []
 
 # 🚀 GitHub에서 퀴즈 데이터 불러오기
